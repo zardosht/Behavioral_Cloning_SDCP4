@@ -38,7 +38,7 @@ def resize(images):
     
     
 
-def generator(samples, images_path, batch_size=32, steering_correction=0.2):
+def generator(samples, images_path, batch_size=32, steering_correction=0.3):
     num_samples = len(samples)
     while True:
         for offset in range(0, num_samples, batch_size):
@@ -82,7 +82,7 @@ def setup_model(input_shape):
     model.add(Cropping2D(cropping=cropping))
     model.add(Lambda(lambda x: (x / 255.0) - 1.0))
     
-    model.add(Conv2D(5, (5, 5), activation="relu"))
+    model.add(Conv2D(5, (3, 3), activation="relu"))
     model.add(MaxPooling2D())
     model.add(Conv2D(10, (3, 3), activation="relu"))
     model.add(MaxPooling2D())
@@ -124,7 +124,7 @@ batch_size = 32
 # batch_size = 16
 # batch_size = 8
 
-epochs = 3
+epochs = 10
 
 # There len(samples) rows in CSV. Each row has 3 images (center, left, right).
 # I also add an augmented image. 
@@ -133,7 +133,7 @@ num_validation_samples = len(validation_samples) * 4
 
 model_checkpoint = ModelCheckpoint("./model/checkpoints/weights.{epoch:02d}-{val_loss:.2f}.hdf5", 
                                    verbose=1, save_best_only=True)
-early_stopping = EarlyStopping()
+# early_stopping = EarlyStopping()
 csvlogger = CSVLogger("./model/training.log", separator=",", append=False)
 
 history = model.fit_generator(train_generator, 
@@ -141,7 +141,7 @@ history = model.fit_generator(train_generator,
                     validation_data=validation_generator, 
                     validation_steps=np.ceil(num_validation_samples / batch_size), 
                     epochs=epochs, verbose=1, 
-                    callbacks=[model_checkpoint, early_stopping, csvlogger])
+                    callbacks=[model_checkpoint, csvlogger])
 
 
 model.save("./model/trained/model.h5")
