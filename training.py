@@ -3,6 +3,12 @@ from matplotlib import pyplot as plt
 import numpy as np
 import sklearn
 import os
+from keras.models import Sequential
+from keras.layers import Lambda, Cropping2D, Conv2D, MaxPooling2D, Flatten, Dense
+from sklearn.model_selection import train_test_split
+import cv2
+
+from IPython.core.debugger import set_trace
 
 
 def get_filename(path):
@@ -11,6 +17,25 @@ def get_filename(path):
    ''' 
    return os.path.basename(path)
 
+
+def load_image(path):
+    '''
+        size: Tuple (height, width)
+    '''
+    im = cv2.imread(path)
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    return im
+
+
+resize_shape = (40, 80)
+def resize(images):
+    '''
+        size: Tuple (height, width)
+    '''
+    import tensorflow as tf
+    return tf.image.resize_area(images, size=resize_shape)
+    
+    
 
 def generator(samples, images_path, batch_size=32, steering_correction=0.2):
     batch_labels = []
@@ -21,17 +46,17 @@ def generator(samples, images_path, batch_size=32, steering_correction=0.2):
             batch_samples = samples[offset:offset+batch_size]
             
             for row in batch_samples:
-                center_img = plt.imread(images_path + get_filename(row[0]))
+                center_img = load_image(images_path + get_filename(row[0]))
                 center_label = float(row[3])
                 batch_images.append(center_img)
                 batch_labels.append(center_label)
                 
-                left_img = plt.imread(images_path + get_filename(row[1]))
+                left_img = load_image(images_path + get_filename(row[1]))
                 left_label = center_label + steering_correction
                 batch_images.append(left_img)
                 batch_labels.append(left_label)
                 
-                right_img = plt.imread(images_path + get_filename(row[2]))
+                right_img = load_image(images_path + get_filename(row[2]))
                 right_label = center_label - steering_correction
                 batch_images.append(right_img)
                 batch_labels.append(right_label)
@@ -47,30 +72,26 @@ def generator(samples, images_path, batch_size=32, steering_correction=0.2):
             yield sklearn.utils.shuffle(batch_X, batch_Y)
 
 
-from keras.models import Sequential
-from keras.layers import Lambda, Cropping2D, Conv2D, MaxPooling2D, Flatten, Dense
-
-
 def setup_model(input_shape):
     model = Sequential()
     
     # preprocessing cropping and normalizing images
-    model.add(Cropping2D(cropping=((75, 25), (0, 0)), input_shape=input_shape))
+    model.add(Lambda(resize, input_shape=input_shape))
+    cropping = ((int(0.375 * resize_shape[0]), int(0.125 * resize_shape[0])), (0, 0))
+    model.add(Cropping2D(cropping=cropping))
     model.add(Lambda(lambda x: (x / 255.0) - 1.0))
     
-    model.add(Conv2D(6, (5, 5), activation="relu"))
+    model.add(Conv2D(6, (3, 3), activation="relu"))
     model.add(MaxPooling2D())
     model.add(Conv2D(16, (5, 5), activation="relu"))
     model.add(MaxPooling2D())
     model.add(Flatten())
-    model.add(Dense(120, activation="relu"))
-    model.add(Dense(84, activation="relu"))
+    # model.add(Dense(60, activation="relu"))
+    model.add(Dense(42, activation="relu"))
     model.add(Dense(1))
     
     return model
 
-
-from sklearn.model_selection import train_test_split
 
 dataset_path = "./driving_data/"
 images_path = dataset_path + "IMG/"
@@ -88,7 +109,6 @@ train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 print("Number of training rows (augmentation and left-right not included): ", len(train_samples))
 print("Number of training samples (augmentation and left-right not included):", len(train_samples)*4)
 
-
 from keras.callbacks import ModelCheckpoint, EarlyStopping, CSVLogger
 
 input_shape = (160, 320, 3)
@@ -98,7 +118,11 @@ model.compile(loss="mse", optimizer="adam")
 train_generator = generator(train_samples, images_path)
 validation_generator = generator(validation_samples, images_path)
 
-batch_size = 256
+# batch_size = 64
+# batch_size = 32
+batch_size = 16
+# batch_size = 8
+
 epochs = 1
 
 # There len(samples) rows in CSV. Each row has 3 images (center, left, right).
