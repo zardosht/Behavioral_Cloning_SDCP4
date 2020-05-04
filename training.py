@@ -33,18 +33,19 @@ def resize(images):
         size: Tuple (height, width)
     '''
     import tensorflow as tf
+    resize_shape = (40, 80)
     return tf.image.resize_area(images, size=resize_shape)
     
     
 
 def generator(samples, images_path, batch_size=32, steering_correction=0.2):
-    batch_labels = []
-    batch_images = []
     num_samples = len(samples)
     while True:
         for offset in range(0, num_samples, batch_size):
             batch_samples = samples[offset:offset+batch_size]
-            
+            batch_labels = []
+            batch_images = []
+
             for row in batch_samples:
                 center_img = load_image(images_path + get_filename(row[0]))
                 center_label = float(row[3])
@@ -81,13 +82,13 @@ def setup_model(input_shape):
     model.add(Cropping2D(cropping=cropping))
     model.add(Lambda(lambda x: (x / 255.0) - 1.0))
     
-    model.add(Conv2D(6, (3, 3), activation="relu"))
+    model.add(Conv2D(5, (5, 5), activation="relu"))
     model.add(MaxPooling2D())
-    model.add(Conv2D(16, (5, 5), activation="relu"))
+    model.add(Conv2D(10, (3, 3), activation="relu"))
     model.add(MaxPooling2D())
     model.add(Flatten())
     # model.add(Dense(60, activation="relu"))
-    model.add(Dense(42, activation="relu"))
+    model.add(Dense(24, activation="relu"))
     model.add(Dense(1))
     
     return model
@@ -119,11 +120,11 @@ train_generator = generator(train_samples, images_path)
 validation_generator = generator(validation_samples, images_path)
 
 # batch_size = 64
-# batch_size = 32
-batch_size = 16
+batch_size = 32
+# batch_size = 16
 # batch_size = 8
 
-epochs = 1
+epochs = 3
 
 # There len(samples) rows in CSV. Each row has 3 images (center, left, right).
 # I also add an augmented image. 

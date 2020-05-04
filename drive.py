@@ -15,6 +15,18 @@ from io import BytesIO
 from keras.models import load_model
 import h5py
 from keras import __version__ as keras_version
+from keras.backend.tensorflow_backend import set_session
+import tensorflow as tf
+
+
+## In order to fix the "Could not create the CuDNN handle" error
+## See: https://github.com/tensorflow/tensorflow/issues/24496
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
+config.log_device_placement = True  # to log device placement (on which device the operation ran)
+sess = tf.Session(config=config)
+set_session(sess)  # set this TensorFlow session as the default session for Keras
+# ###############################################
 
 sio = socketio.Server()
 app = Flask(__name__)
