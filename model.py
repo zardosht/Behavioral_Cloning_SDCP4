@@ -7,6 +7,7 @@ from keras.models import Sequential
 from keras.layers import Lambda, Cropping2D, Conv2D, MaxPooling2D, Flatten, Dense
 from sklearn.model_selection import train_test_split
 import cv2
+from keras.callbacks import ModelCheckpoint, EarlyStopping, CSVLogger
 
 from IPython.core.debugger import set_trace
 
@@ -19,9 +20,6 @@ def get_filename(path):
 
 
 def load_image(path):
-    '''
-        size: Tuple (height, width)
-    '''
     im = cv2.imread(path)
     im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     return im
@@ -29,9 +27,6 @@ def load_image(path):
 
 resize_shape = (40, 80)
 def resize(images):
-    '''
-        size: Tuple (height, width)
-    '''
     import tensorflow as tf
     resize_shape = (40, 80)
     return tf.image.resize_area(images, size=resize_shape)
@@ -87,7 +82,7 @@ def setup_model(input_shape):
     model.add(Conv2D(10, (3, 3), activation="relu"))
     model.add(MaxPooling2D())
     model.add(Flatten())
-    # model.add(Dense(60, activation="relu"))
+    model.add(Dense(60, activation="relu"))
     model.add(Dense(24, activation="relu"))
     model.add(Dense(1))
     
@@ -110,8 +105,6 @@ train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 print("Number of training rows (augmentation and left-right not included): ", len(train_samples))
 print("Number of training samples (augmentation and left-right not included):", len(train_samples)*4)
 
-from keras.callbacks import ModelCheckpoint, EarlyStopping, CSVLogger
-
 input_shape = (160, 320, 3)
 model = setup_model(input_shape)
 model.compile(loss="mse", optimizer="adam")
@@ -126,7 +119,8 @@ batch_size = 32
 
 epochs = 10
 
-# There len(samples) rows in CSV. Each row has 3 images (center, left, right).
+# There are len(samples) rows in CSV. 
+# Each row has 3 images (center, left, right).
 # I also add an augmented image. 
 num_train_samples = len(train_samples) * 4
 num_validation_samples = len(validation_samples) * 4
