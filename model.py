@@ -4,7 +4,7 @@ import numpy as np
 import sklearn
 import os
 from keras.models import Sequential
-from keras.layers import Lambda, Cropping2D, Conv2D, MaxPooling2D, Flatten, Dense
+from keras.layers import Lambda, Cropping2D, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from sklearn.model_selection import train_test_split
 import cv2
 from keras.callbacks import ModelCheckpoint, EarlyStopping, CSVLogger
@@ -79,13 +79,20 @@ def setup_model(input_shape):
     
     model.add(Conv2D(5, (3, 3), activation="relu"))
     model.add(MaxPooling2D())
+    
     model.add(Conv2D(10, (3, 3), activation="relu"))
     model.add(MaxPooling2D())
-    model.add(Flatten())
-    model.add(Dense(60, activation="relu"))
-    model.add(Dense(24, activation="relu"))
-    model.add(Dense(1))
     
+    model.add(Flatten())
+    model.add(Dropout(0.25))
+    
+    model.add(Dense(60, activation="relu"))
+    model.add(Dropout(0.25))
+    
+    model.add(Dense(24, activation="relu"))
+    model.add(Dropout(0.25))
+
+    model.add(Dense(1))
     return model
 
 
