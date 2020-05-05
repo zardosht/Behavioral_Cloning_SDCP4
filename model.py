@@ -1,15 +1,16 @@
 import csv
-from matplotlib import pyplot as plt
-import numpy as np
-import sklearn
 import os
+import random
+import numpy as np
+import cv2
+
 from keras.models import Sequential
 from keras.layers import Lambda, Cropping2D, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
-from sklearn.model_selection import train_test_split
-import cv2
 from keras.callbacks import ModelCheckpoint, EarlyStopping, CSVLogger
 
-from IPython.core.debugger import set_trace
+import sklearn
+from sklearn.model_selection import train_test_split
+from matplotlib import pyplot as plt
 
 
 def get_filename(path):
@@ -106,6 +107,8 @@ with open(dataset_path + "driving_log.csv") as csvfile:
     for row in csvreader:
         samples.append(row)
 
+# shuffle the CSV rows for more randomness in data
+random.shuffle(samples)
 print("Number of rows in CSV file: ", len(samples))
 
 train_samples, validation_samples = train_test_split(samples, test_size=0.2)
