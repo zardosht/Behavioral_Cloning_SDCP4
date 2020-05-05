@@ -83,29 +83,37 @@ I used a generator (`model.py:37-69`) to feed the data into optimizer for traini
 
 I used an adam optimizer so that manually training the learning rate wasn't necessary.
 
-I trained the model for 10 epochs. and stoped the training when the improvement in validation loss was not very large. I then tested this model in the simulator and it passed the requirement test for Track1 (the car does not leave the drivable area of the road; see the [vidoe]("./output_video.mp4"))
+I trained the model for 10 epochs and stoped the training when the improvement in validation loss was not very large. I then tested this model in the simulator and it passed the requirement test for Track1 (the car does not leave the drivable area of the road). Figure below shows the learning curve. As can be seen, the validation loss has not plateued yet and the rate of decrease in validation loss is still high. This model however performs well enough for the requirements of this project. 
 
+![alt_text][learning_curve]
 
 #### 2. Solution Design Approach
 
-The overall strategy for deriving a model architecture was to ...
+I first created a dummy model to test the pipeline for training and testing in the simulator. 
 
-My first step was to use a convolution neural network model similar to the ... I thought this model might be appropriate because ...
+I then decided to create a model based on LeNet. I started with the LeNet architecture and adopted it to my image size and output for MSE loss. I also added Lambda layers for preprocessing: one layer for nomralizing the data to zero mean with values between `[-0.5 , 0.5]`, and a layer for cropping the upper and lower part of the image so that only the road portion remains for training. 
 
-In order to gauge how well the model was working, I split my image and steering angle data into a training and validation set. I found that my first model had a low mean squared error on the training set but a high mean squared error on the validation set. This implied that the model was overfitting. 
+However training of this model with the original image size was too slow and lead to out-of-memory errors on my machine. So I added a layer to resize the images. 
 
-To combat the overfitting, I modified the model so that ...
+I then collected about 3000 samples and trained the model. The validation loss showed overfitting. In order to make training faster and reduce the overfitting, I decided to reduce the parameters of the model: I reduced the filter size for the conv layers and removed, reduced the number of nodes in fully connected layers, and removed one of the fully connected layers. The training with this model was fast with 3000 samples and passed the requirement for track 1, with a validation loss of 0.03.
 
-Then I ... 
+I then tested this model on track 2, which performed poorly. So I collected more data from track 2, and trained the model. This time model was underfitting. So I added the discarded FC layer back, and added dropout to prevent overfitting. I trained with this architecture for only 10 epochs with about 6700 samples from both tracks. The resulting model again passes the requirement of the track 1. I also perfomrs surprisingly good for track 2. However drives off the road for very sharp turns. This can be be fixed by collecting more data for sharp curves in track2 and training the model for more epochs. 
 
-The final step was to run the simulator to see how well the car was driving around track one. There were a few spots where the vehicle fell off the track... to improve the driving behavior in these cases, I ....
-
-At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road.
+At the end of the process, the vehicle is able to drive autonomously around the track 1 without leaving the road.
 
 #### 3. Final Model Architecture
 
-The final model architecture (model.py lines 18-24) consisted of a convolution neural network with the following layers and layer sizes ...
+The final model architecture (`model.py` lines 72-97) consisted of a convolution neural network with the following layers and layer sizes: 
 
-Here is a visualization of the architecture (note: visualizing the architecture is optional according to the project rubric)
+The first three layers do preprocessing. The input image has shape `(160, 320, 3)`. The first `Lambda` layer resizes the image to `(40, 80, 3)`. The next layer crops out the upper and lower portion of the image by factor `0.375 * height` for the top cropping and `0.125 * image_height` for bottom cropping. I defined these cropping factors manully by examining multiple images. Third preprocessing layer normalizes the input to have zero mean and values between  `[-0.5 , 0.5]`.  Figure below shows the result of resizing and cropping the input: 
 
-![alt text][image1]
+![alt_text][preprocessing]
+
+After preprocessing follow two Conv and MaxPooling layer: first conv layer with 5 filter of size 3x3 and second one with 10 filters of size 3x3. Both layers use ReLU activation. Other parameters (stride, padding) are left as Keras defaults. 
+
+Follwing the conv layers is a flatten layer and then two fully connected layers. The out put layer is 1 node output the steering value. 
+
+
+Here is a visualization of the architecture: 
+
+![alt text][model]
